@@ -1,0 +1,52 @@
+version: '3.8'
+
+services: 
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.9-management
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+  db:
+    container_name: postgres_db
+    image: postgres:14.0
+    restart: always
+    env_file: ./.env
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=pcs_db
+      - PGDATA=/var/lib/postgresql/data/pgdata 
+    ports:
+      - 5434:5434
+    command: -p 5434
+  app:
+    depends_on:
+      - db
+      - rabbitmq
+    build: ./pcs
+    restart: always
+    container_name: app
+    env_file: ./.env
+    ports:
+      - "8080:8080"
+    volumes:
+      - .m2:/root/.m2
+      - ./pcs:/app/pcs
+    environment:
+      FLASK_ENV: development
+    stdin_open: true
+    tty: true
+  sender:
+    container_name: email_sender
+    build: ./mailsend
+    depends_on:
+      - rabbitmq
+    restart: always
+    env_file: ./.env
+    volumes:
+      - .m2:/root/.m2
+      - .mailSend:/app/mailSend
+
+volumes:
+  db: 
