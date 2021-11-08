@@ -1,6 +1,5 @@
 package ru.satird.pcs.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -8,40 +7,38 @@ import ru.satird.pcs.domains.ERole;
 import ru.satird.pcs.domains.Role;
 import ru.satird.pcs.domains.User;
 import ru.satird.pcs.domains.VerificationToken;
+import ru.satird.pcs.dto.UserDto;
+import ru.satird.pcs.dto.UserInfoDto;
+import ru.satird.pcs.dto.payload.request.SignupRequest;
 import ru.satird.pcs.errors.UserNotFoundException;
-import ru.satird.pcs.payload.request.SignupRequest;
+import ru.satird.pcs.mapper.UserMapper;
 import ru.satird.pcs.repositories.UserRepository;
 import ru.satird.pcs.repositories.VerificationTokenRepository;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
 
     private static final String ROLE_NOT_FOUND = "Error: Role is not found.";
-    private UserRepository userRepository;
-    private VerificationTokenRepository tokenRepository;
-    private PasswordEncoder passwordEncoder;
-    private RoleService roleService;
+    private final UserRepository userRepository;
+    private final VerificationTokenRepository tokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleService roleService;
+    private final UserMapper userMapper;
+    private final RatingService ratingService;
 
-    @Autowired
-    public void setRoleService(RoleService roleService) {
-        this.roleService = roleService;
-    }
-
-    @Autowired
-    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
-        this.passwordEncoder = passwordEncoder;
-    }
-
-    @Autowired
-    public void setTokenRepository(VerificationTokenRepository tokenRepository) {
-        this.tokenRepository = tokenRepository;
-    }
-
-    @Autowired
-    public void setUserRepository(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, VerificationTokenRepository tokenRepository,
+                           PasswordEncoder passwordEncoder, RoleService roleService, UserMapper userMapper, RatingService ratingService) {
         this.userRepository = userRepository;
+        this.tokenRepository = tokenRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.roleService = roleService;
+        this.userMapper = userMapper;
+        this.ratingService = ratingService;
     }
 
     @Override
@@ -66,26 +63,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUser(String verificationToken) {
-        final VerificationToken token = tokenRepository.findByToken(verificationToken);
-        if (token != null) {
-            return token.getUser();
-        }
-        return null;
-    }
-
-    @Override
-    public VerificationToken generateNewVerificationToken(String existingToken) {
-        VerificationToken vToken = tokenRepository.findByToken(existingToken);
-        vToken.updateToken(UUID.randomUUID()
-                .toString());
-        vToken = tokenRepository.save(vToken);
-        return vToken;
-    }
-
-    @Override
-    public List<User> showAllUser() {
-        return userRepository.findAll();
+    public List<UserDto> showAllUser() {
+        return userMapper.mapUserDtoList(userRepository.findAll());
     }
 
     @Override
@@ -94,11 +73,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User updateUser(Long id, String name) {
+    public UserInfoDto updateUser(Long id, UserDto userDto) {
         final Optional<User> changedUser = userRepository.findById(id);
         if (changedUser.isPresent()) {
-            changedUser.get().setName(name);
-            return userRepository.save(changedUser.get());
+            changedUser.get().setName(userDto.getName());
+            final User savedUser = userRepository.save(changedUser.get());
+            return userMapper.mapUserInfoDto(savedUser);
         } else {
             throw new UserNotFoundException("Пользователь с id: " + id + " не найден");
         }
@@ -140,7 +120,6 @@ public class UserServiceImpl implements UserService {
         User user = new User(signUpRequest.getUsername(),
                 signUpRequest.getEmail(),
                 passwordEncoder.encode(signUpRequest.getPassword()));
-        user.setRating(5f);
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();
 
@@ -163,6 +142,7 @@ public class UserServiceImpl implements UserService {
                         roles.add(modRole);
 
                         break;
+                    case "user":
                     default:
                         Role userRole = roleService.findRoleByName(ERole.ROLE_USER)
                                 .orElseThrow(() -> new RuntimeException(ROLE_NOT_FOUND));
@@ -172,6 +152,13 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setRoles(roles);
+        saveUser(user);
+        ratingService.rate(user, 5F);
         return user;
+    }
+
+    @Override
+    public UserInfoDto findUserByIdAndConvertToUserInfoDto(Long id) {
+        return userMapper.mapUserInfoDto(findUserById(id));
     }
 }

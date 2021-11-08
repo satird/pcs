@@ -1,18 +1,17 @@
 package ru.satird.pcs.domains;
 
 
-import com.fasterxml.jackson.annotation.JsonView;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ru.satird.pcs.util.Views;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -29,11 +28,9 @@ public class User implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    @JsonView({Views.AdBasic.class, Views.CommentIdText.class, Views.MessageBasic.class})
     private Long id;
     @NotBlank
     @Column(name = "name")
-    @JsonView({Views.AdBasic.class, Views.CommentIdText.class, Views.MessageBasic.class})
     private String name;
     @NotBlank
     @Column(name = "password")
@@ -41,7 +38,6 @@ public class User implements Serializable {
     @NotBlank
     @Email
     @Column(name = "email")
-    @JsonView({Views.AdBasic.class, Views.CommentIdText.class})
     private String email;
     @Column(name = "active")
     private boolean active;
@@ -50,8 +46,8 @@ public class User implements Serializable {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
-    @Column(name = "rating")
-    private Float rating;
+    @OneToMany(mappedBy = "user", orphanRemoval = true)
+    private List<Rating> rating;
 
     public User(@NotBlank String name, @NotBlank @Email String email, @NotBlank String password ) {
         this.name = name;

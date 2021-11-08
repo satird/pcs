@@ -1,41 +1,49 @@
 package ru.satird.pcs.services;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import org.json.simple.JSONObject;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import ru.satird.pcs.config.RabbitConfig;
+import ru.satird.pcs.domains.Ad;
+import ru.satird.pcs.dto.AdVisibleDto;
+import ru.satird.pcs.mapper.AdMapper;
 
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-@Component
+@Slf4j
+@Service
 public class Sender {
 
-    private static final String QUEUE_NAME = "senla";
-    @Value("${sender.hostname}")
-    private static String hostSender;
+    private final RabbitTemplate rabbitTemplate;
+    private final AdService adService;
+    private final AdMapper adMapper;
 
-    private Sender() {
+    @Autowired
+    public Sender(RabbitTemplate rabbitTemplate, AdService adService, AdMapper adMapper) {
+        this.rabbitTemplate = rabbitTemplate;
+        this.adService = adService;
+        this.adMapper = adMapper;
     }
 
-    public static void sendMessage(String body, String subject, String recipient) throws IOException {
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost(hostSender);
-        try (Connection connection = factory.newConnection();
-             Channel channel = connection.createChannel()) {
-            channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+    public void sendMessage(String body, String subject, String recipient) {
+        Map<String, String> map = new HashMap<>();
+        map.put("body", body);
+        map.put("subject", subject);
+        map.put("recipient", recipient);
+        rabbitTemplate.convertAndSend(RabbitConfig.MY_QUEUE_NAME, map);
+        log.info("Sent '" + map + "'");
+    }
 
-            JSONObject obj = new JSONObject();
-            obj.put("body", body);
-            obj.put("subject", subject);
-            obj.put("recipient", recipient);
-            byte[] data = obj.toJSONString().getBytes();
-            channel.basicPublish("", QUEUE_NAME, null, data);
-            System.out.println(" [x] Sent '" + subject + "'");
-        } catch (TimeoutException e) {
-            e.printStackTrace();
-        }
+    @Scheduled(cron = "0 0 0 */7 * *")
+    public void sendWeeklyData() {
+        List<Ad> adList = new ArrayList<>(adService.getLastSevenDays());
+        final List<AdVisibleDto> adVisibleDtoList = adMapper.mapAdVisibleDtoList(adList);
+        rabbitTemplate.convertAndSend(RabbitConfig.ROUTING_KEY, adVisibleDtoList);
+        log.info("Sent '" + adVisibleDtoList + "'");
     }
 }

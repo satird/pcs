@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.satird.pcs.domains.ChatRoom;
 import ru.satird.pcs.domains.User;
+import ru.satird.pcs.dto.chat.ChatRoomDto;
+import ru.satird.pcs.mapper.ChatRoomMapper;
 import ru.satird.pcs.repositories.ChatRoomRepository;
 
 import java.util.List;
@@ -13,11 +15,13 @@ import java.util.Set;
 @Service
 public class ChatRoomServiceImpl implements ChatRoomService {
 
-    private ChatRoomRepository chatRoomRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomMapper chatRoomMapper;
 
     @Autowired
-    public void setChatRoomRepository(ChatRoomRepository chatRoomRepository) {
+    public ChatRoomServiceImpl(ChatRoomRepository chatRoomRepository, ChatRoomMapper chatRoomMapper) {
         this.chatRoomRepository = chatRoomRepository;
+        this.chatRoomMapper = chatRoomMapper;
     }
 
     @Override
@@ -53,8 +57,9 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     }
 
     @Override
-    public Set<ChatRoom> findAllChatCurrentUser(User currentUser) {
-        return chatRoomRepository.findAllBySender(currentUser).orElseThrow(() -> new RuntimeException("Chat for this user: " + currentUser.getName() + " not found, please try again later"));
+    public Set<ChatRoomDto> findAllChatCurrentUser(User currentUser) {
+        final Set<ChatRoom> chatRooms = chatRoomRepository.findAllBySender(currentUser).orElseThrow(() -> new RuntimeException("Chat for this user: " + currentUser.getName() + " not found, please try again later"));
+        return chatRoomMapper.mapChatRoomDtoList(chatRooms);
     }
 
     @Override

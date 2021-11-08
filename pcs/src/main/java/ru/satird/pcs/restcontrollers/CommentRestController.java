@@ -1,76 +1,69 @@
 package ru.satird.pcs.restcontrollers;
 
-import com.fasterxml.jackson.annotation.JsonView;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import ru.satird.pcs.domains.Ad;
-import ru.satird.pcs.domains.Comment;
 import ru.satird.pcs.domains.User;
 import ru.satird.pcs.dto.CommentDto;
+import ru.satird.pcs.dto.CommentVisibleDto;
 import ru.satird.pcs.dto.UserDetailsImpl;
 import ru.satird.pcs.services.CommentService;
 import ru.satird.pcs.services.UserService;
-import ru.satird.pcs.util.Views;
 
 import java.util.List;
 
+@Api(description = "Контроллер комментариев")
 @Slf4j
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping(value = "/rest/api")
 public class CommentRestController {
 
-    private CommentService commentService;
-    private UserService userService;
-    private ModelMapper modelMapper;
+    private final CommentService commentService;
+    private final UserService userService;
 
     @Autowired
-    public void setUserService(UserService userService) {
+    public CommentRestController(CommentService commentService, UserService userService) {
+        this.commentService = commentService;
         this.userService = userService;
     }
 
-    @Autowired
-    public void setModelMapper(ModelMapper modelMapper) {
-        this.modelMapper = modelMapper;
-    }
-
-    @Autowired
-    public void setCommentService(CommentService commentService) {
-        this.commentService = commentService;
-    }
-
-    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
+    @ApiOperation(value = "Получить комментарии", notes = "Получить комментарии под объявлением")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "id объявления", required = true, dataTypeClass = Long.class, paramType = "path", example = "3"),
+    })
     @GetMapping("/ad/{id}/comment")
-    @JsonView(Views.CommentIdTextDate.class)
-    public ResponseEntity<List<Comment>> getAllCommentsByAd(
+    public ResponseEntity<List<CommentVisibleDto>> getAllCommentsByAd(
             @PathVariable("id") Long id
     ) {
-        logger.debug("getAllCommentsByAd...");
-        final List<Comment> commentList = commentService.showAlCommentsByAd(id);
+        log.debug("getAllCommentsByAd...");
+        final List<CommentVisibleDto> commentList = commentService.showAlCommentsByAd(id);
         return new ResponseEntity<>(commentList, HttpStatus.OK);
     }
 
+    @ApiOperation(value = "Оставить комментарий", notes = "Оставить комментарий под объявлением")
+    @ApiImplicitParams ({
+            @ApiImplicitParam(name = "id", value = "id объявления", required = true, dataTypeClass = Long.class, paramType = "path", example = "2"),
+            @ApiImplicitParam (name = "commentDto", value = "Объект с текстом комментария", required = true, dataType = "ru.satird.pcs.dto.CommentDto", paramType = "body")
+    })
     @PostMapping("/ad/{id}/comment")
-    @JsonView(Views.CommentIdTextDate.class)
-    public ResponseEntity<Comment> createComment(
+    public ResponseEntity<CommentVisibleDto> createComment(
             @PathVariable("id") Ad ad,
-            @RequestBody CommentDto comment
+            @RequestBody CommentDto commentDto
     ) {
-        logger.debug("createComment...");
+        log.debug("createComment...");
         final UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         final String email = userDetails.getEmail();
         User currentUser = userService.findUserByEmail(email);
-        final Comment newComment = commentService.createComment(ad, convertToCommentEntity(comment), currentUser);
+        final CommentVisibleDto newComment = commentService.createComment(ad, commentDto, currentUser);
         return new ResponseEntity<>(newComment, HttpStatus.CREATED);
-    }
-
-    private Comment convertToCommentEntity(CommentDto commentDto) {
-        return modelMapper.map(commentDto, Comment.class);
     }
 }

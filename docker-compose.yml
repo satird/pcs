@@ -11,12 +11,10 @@ services:
     container_name: postgres_db
     image: postgres:14.0
     restart: always
-    env_file: ./.env
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=root
       - POSTGRES_DB=pcs_db
-      - PGDATA=/var/lib/postgresql/data/pgdata 
     ports:
       - 5434:5434
     command: -p 5434
@@ -27,12 +25,8 @@ services:
     build: ./pcs
     restart: always
     container_name: app
-    env_file: ./.env
     ports:
       - "8080:8080"
-    volumes:
-      - .m2:/root/.m2
-      - ./pcs:/app/pcs
     environment:
       FLASK_ENV: development
     stdin_open: true
@@ -43,10 +37,6 @@ services:
     depends_on:
       - rabbitmq
     restart: always
-    env_file: ./.env
-    volumes:
-      - .m2:/root/.m2
-      - .mailSend:/app/mailSend
 
 volumes:
   db: 

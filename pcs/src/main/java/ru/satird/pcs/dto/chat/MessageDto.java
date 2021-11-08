@@ -1,7 +1,10 @@
 package ru.satird.pcs.dto.chat;
 
-import lombok.*;
-import ru.satird.pcs.domains.User;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import ru.satird.pcs.dto.UserDto;
 
 import java.util.Date;
 
@@ -12,8 +15,8 @@ import java.util.Date;
 public class MessageDto {
 
     private Long id;
-    private User sender;
-    private User recipient;
+    private UserDto sender;
+    private UserDto recipient;
 
     private String text;
     private Date creationDate;

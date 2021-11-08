@@ -1,5 +1,6 @@
 package ru.satird.pcs.errors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
@@ -18,6 +19,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.Date;
 
+@Slf4j
 @RestControllerAdvice
 public class RestControllerExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -61,41 +63,41 @@ public class RestControllerExceptionHandler extends ResponseEntityExceptionHandl
     @ExceptionHandler(value = UserNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorMessage handleUserNotFound(RuntimeException ex, WebRequest request) {
-        logger.error(ERROR_NOT_FOUND, ex);
+        log.error(ERROR_NOT_FOUND, ex);
         return new ErrorMessage(HttpStatus.NOT_FOUND.value(), new Date(), ex.getMessage(), request.getDescription(false));
     }
 
     @ExceptionHandler(value = AdsNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorMessage handleAdsNotFound(RuntimeException ex, WebRequest request) {
-        logger.error(ERROR_NOT_FOUND, ex);
-        return new ErrorMessage(messages.getMessage("Ads not found", null, request.getLocale()), HttpStatus.NOT_FOUND.value(), new Date(), ex.getMessage(), request.getDescription(false));
+        log.error(ERROR_NOT_FOUND, ex);
+        return new ErrorMessage(messages.getMessage("message.ad.notFound", null, request.getLocale()), HttpStatus.NOT_FOUND.value(), new Date(), ex.getMessage(), request.getDescription(false));
     }
 
     @ExceptionHandler({MailAuthenticationException.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorMessage handleMail(RuntimeException ex, WebRequest request) {
-        logger.error("500 Status Code", ex);
+        log.error("500 Status Code", ex);
         return new ErrorMessage(messages.getMessage("message.newLoc.enabled", null, request.getLocale()), HttpStatus.INTERNAL_SERVER_ERROR.value(), new Date(), ex.getMessage(), request.getDescription(false));
     }
 
     @ExceptionHandler({ UserAlreadyExistException.class })
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorMessage handleUserAlreadyExist(final RuntimeException ex, final WebRequest request) {
-        logger.error("409 Status Code", ex);
+        log.error("409 Status Code", ex);
         return new ErrorMessage(messages.getMessage("message.regError", null, request.getLocale()), HttpStatus.CONFLICT.value(), new Date(), ex.getMessage(), request.getDescription(false));
     }
 
     @ExceptionHandler({Exception.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorMessage handleInternal(RuntimeException ex, WebRequest request) {
-        logger.error(ERROR_NOT_FOUND, ex);
+        log.error(ERROR_NOT_FOUND, ex);
         return new ErrorMessage(messages.getMessage("message.error", null, request.getLocale()), HttpStatus.NOT_FOUND.value(), new Date(), ex.getMessage(), request.getDescription(false));
     }
 
     @Override
     protected ResponseEntity<Object> handleBindException(final BindException ex, final HttpHeaders headers, final HttpStatus status, final WebRequest request) {
-        logger.error("400 Status Code", ex);
+        log.error("400 Status Code", ex);
         final BindingResult result = ex.getBindingResult();
         final ErrorMessage errorMessage = new ErrorMessage(messages.getMessage("Invalid" + result.getObjectName(), null, request.getLocale()), HttpStatus.BAD_REQUEST.value(), new Date(), ex.getMessage(), request.getDescription(false));
         return handleExceptionInternal(ex, errorMessage, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
@@ -103,7 +105,7 @@ public class RestControllerExceptionHandler extends ResponseEntityExceptionHandl
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(final MethodArgumentNotValidException ex, final HttpHeaders headers, final HttpStatus status, final WebRequest request) {
-        logger.error("400 Status Code", ex);
+        log.error("400 Status Code", ex);
         final BindingResult result = ex.getBindingResult();
         final ErrorMessage errorMessage = new ErrorMessage(messages.getMessage("Invalid" + result.getObjectName(), null, request.getLocale()), HttpStatus.BAD_REQUEST.value(), new Date(), ex.getMessage(), request.getDescription(false));
         return handleExceptionInternal(ex, errorMessage, new HttpHeaders(), HttpStatus.METHOD_NOT_ALLOWED, request);

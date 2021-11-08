@@ -14,8 +14,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import ru.satird.pcs.security.jwt.AuthEntryPointJwt;
-import ru.satird.pcs.security.jwt.AuthTokenFilter;
+import ru.satird.pcs.config.jwt.AuthEntryPointJwt;
+import ru.satird.pcs.config.jwt.AuthTokenFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -63,8 +63,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests()
-                    .antMatchers("/api/auth/**").permitAll()
-                    .antMatchers("/api/test/**").permitAll()
+                .antMatchers("/api/auth/**").permitAll()
+                .antMatchers("/swagger-ui/**","/swagger-resources/**", "/v2/api-docs/**").permitAll()
                 .anyRequest().authenticated();
 
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);

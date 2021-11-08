@@ -5,6 +5,9 @@ import org.springframework.stereotype.Service;
 import ru.satird.pcs.domains.Ad;
 import ru.satird.pcs.domains.Comment;
 import ru.satird.pcs.domains.User;
+import ru.satird.pcs.dto.CommentDto;
+import ru.satird.pcs.dto.CommentVisibleDto;
+import ru.satird.pcs.mapper.CommentMapper;
 import ru.satird.pcs.repositories.CommentRepository;
 
 import java.sql.Timestamp;
@@ -14,28 +17,27 @@ import java.util.List;
 @Service
 public class CommentServiceImpl implements CommentService {
 
-    private CommentRepository commentRepository;
+    private final CommentRepository commentRepository;
+    private final CommentMapper commentMapper;
 
     @Autowired
-    public void setCommentRepository(CommentRepository commentRepository) {
+    public CommentServiceImpl(CommentRepository commentRepository, CommentMapper commentMapper) {
         this.commentRepository = commentRepository;
+        this.commentMapper = commentMapper;
     }
 
     @Override
-    public Comment createComment(Ad ad, Comment comment, User user) {
+    public CommentVisibleDto createComment(Ad ad, CommentDto commentDto, User user) {
+        Comment comment = commentMapper.mapComment(commentDto);
         comment.setAuthor(user);
         comment.setAd(ad);
         comment.setCreationDate(Timestamp.valueOf(LocalDateTime.now()));
-        return commentRepository.save(comment);
+        final Comment createdComment = commentRepository.save(comment);
+        return commentMapper.mapCommentVisibleDto(createdComment);
     }
 
     @Override
-    public List<Comment> showAlComments() {
-        return commentRepository.findAll();
-    }
-
-    @Override
-    public List<Comment> showAlCommentsByAd(Long id) {
-        return commentRepository.findAllByAd_Id(id);
+    public List<CommentVisibleDto> showAlCommentsByAd(Long id) {
+        return commentMapper.mapCommentVisibleDtoList(commentRepository.findAllByAd_Id(id));
     }
 }

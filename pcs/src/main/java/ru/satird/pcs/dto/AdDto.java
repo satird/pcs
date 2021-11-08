@@ -1,17 +1,16 @@
 package ru.satird.pcs.dto;
 
-
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.satird.pcs.domains.Category;
 import ru.satird.pcs.domains.User;
 
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class AdDto {
 
     private Long id;
