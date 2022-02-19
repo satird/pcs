@@ -110,14 +110,18 @@ public class AdServiceImpl implements AdService {
                     collect = adList.stream()
                             .sorted(Comparator.comparing(Ad::isPremium)
                                     .thenComparing(Comparator.comparing(Ad::getCreationDate).reversed())
-                                    .thenComparing(ad -> ad.getAdvertiser().getRating().stream().mapToDouble(Rating::getScore).average().orElse(Double.NaN)).reversed())
+                                    .thenComparing(ad -> ad.getAdvertiser().getRating().stream()
+                                            .mapToDouble(Rating::getScore)
+                                            .average()
+                                            .orElse(Double.NaN)).reversed())
                             .collect(Collectors.toList());
                     break;
                 case "price":
                     collect = adList.stream()
                             .sorted(Comparator.comparing(Ad::isPremium)
                                     .thenComparing(Comparator.comparing(Ad::getPrice).reversed())
-                                    .thenComparing(ad -> ad.getAdvertiser().getRating().stream().mapToDouble(Rating::getScore).average().orElse(Double.NaN)).reversed())
+                                    .thenComparing(ad -> ad.getAdvertiser().getRating()
+                                            .stream().mapToDouble(Rating::getScore).average().orElse(Double.NaN)).reversed())
                             .collect(Collectors.toList());
                     break;
                 case "title":

@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 @Component
 public class Util {
 
-    private UserService userService;
+    private final UserService userService;
 
     @Autowired
     public Util(UserService userService) {

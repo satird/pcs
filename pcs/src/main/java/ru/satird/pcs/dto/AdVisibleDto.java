@@ -8,6 +8,7 @@ import ru.satird.pcs.domains.Category;
 @Setter
 public class AdVisibleDto {
 
+    private Long id;
     private String title;
     private String text;
     private Float price;
